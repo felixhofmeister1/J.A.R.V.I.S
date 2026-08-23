@@ -52,72 +52,78 @@ def get_index():
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JARVIS - Voice Interface</title>
     <style>
-        html {
-            background-color: #020b1c;
-            height: 100%;
-        }
-        body {
+        html, body {
             margin: 0;
-            min-height: 100vh;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #020b1c;
             background: linear-gradient(135deg, #020b1c, #001f3f, #004080);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-            box-sizing: border-box;
             font-family: 'Courier New', Courier, monospace;
             color: #00ffff;
-            overflow-y: auto;
+            overflow: hidden;
         }
         @keyframes gradientBG {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
+        
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
         h1 {
-            letter-spacing: 3px;
-            text-shadow: 0 0 10px rgba(0,255,255,0.7);
-            margin-bottom: 5px;
+            letter-spacing: 4px;
+            text-shadow: 0 0 15px rgba(0,255,255,0.8);
+            margin: 0 0 6px 0;
+            text-align: center;
         }
+
         #status {
-            font-size: 14px;
             color: #80f0ff;
-            margin-bottom: 30px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            text-align: center;
         }
+
         .jarvis-core {
-            width: 150px;
-            height: 150px;
-            min-width: 150px;
-            min-height: 150px;
             border-radius: 50%;
-            border: 3px solid rgba(0, 255, 255, 0.3);
+            border: 3px solid rgba(0, 255, 255, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 30px rgba(0, 191, 255, 0.4);
+            box-shadow: 0 0 35px rgba(0, 191, 255, 0.5);
             position: relative;
         }
+
         .ring {
             position: absolute;
-            width: 130px;
-            height: 130px;
+            width: 82%;
+            height: 82%;
             border-radius: 50%;
-            border: 2px dashed rgba(0, 255, 255, 0.6);
+            border: 2px dashed rgba(0, 255, 255, 0.7);
             animation: spin 10s linear infinite;
         }
+
         .core-inner {
-            width: 80px;
-            height: 80px;
+            width: 50%;
+            height: 50%;
             background: radial-gradient(circle, #00ffff 0%, #0055ff 100%);
             border-radius: 50%;
-            box-shadow: 0 0 20px #00ffff;
+            box-shadow: 0 0 25px #00ffff;
             transition: transform 0.1s ease;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -126,22 +132,19 @@ def get_index():
             animation: pulse 1s ease infinite alternate;
         }
         @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 10px #00ffff; }
-            100% { transform: scale(1.15); box-shadow: 0 0 40px #00ffff, 0 0 80px #0055ff; }
+            0% { transform: scale(0.95); box-shadow: 0 0 15px #00ffff; }
+            100% { transform: scale(1.15); box-shadow: 0 0 45px #00ffff, 0 0 90px #0055ff; }
         }
 
         button {
-            margin-top: 40px;
             background: transparent;
             border: 2px solid #00ffff;
             color: #00ffff;
-            padding: 12px 30px;
-            font-size: 16px;
             font-family: 'Courier New', Courier, monospace;
             cursor: pointer;
             border-radius: 4px;
             letter-spacing: 2px;
-            box-shadow: 0 0 10px rgba(0,255,255,0.3);
+            box-shadow: 0 0 12px rgba(0,255,255,0.4);
             transition: 0.2s;
         }
         button:hover {
@@ -149,30 +152,61 @@ def get_index():
             color: #000;
             box-shadow: 0 0 25px #00ffff;
         }
+
         #transcript {
-            margin-top: 25px;
-            max-width: 600px;
             text-align: center;
-            font-size: 14px;
             color: #cceeff;
-            min-height: 40px;
-            padding: 0 20px;
             word-break: break-word;
+        }
+
+        /* ==========================================
+           1. IPHONE LAYOUT (Screens up to 480px width)
+           ========================================== */
+        @media screen and (max-width: 480px) {
+            h1 { font-size: 26px; }
+            #status { font-size: 11px; margin-bottom: 2vh; }
+            .jarvis-core { width: 38vw; height: 38vw; min-width: 120px; min-height: 120px; }
+            button { margin-top: 3vh; padding: 10px 20px; font-size: 13px; }
+            #transcript { margin-top: 2vh; font-size: 12px; width: 95%; min-height: 35px; }
+        }
+
+        /* ==========================================
+           2. IPAD LAYOUT (Screens 481px to 1024px)
+           ========================================== */
+        @media screen and (min-width: 481px) and (max-width: 1024px) {
+            h1 { font-size: 36px; }
+            #status { font-size: 14px; margin-bottom: 3vh; }
+            .jarvis-core { width: 28vmin; height: 28vmin; min-width: 180px; min-height: 180px; }
+            button { margin-top: 3.5vh; padding: 14px 32px; font-size: 16px; }
+            #transcript { margin-top: 2.5vh; font-size: 15px; width: 85%; min-height: 45px; }
+        }
+
+        /* ==========================================
+           3. PC / DESKTOP LAYOUT (Screens above 1025px)
+           ========================================== */
+        @media screen and (min-width: 1025px) {
+            h1 { font-size: 44px; }
+            #status { font-size: 15px; margin-bottom: 35px; }
+            .jarvis-core { width: 180px; height: 180px; }
+            button { margin-top: 35px; padding: 12px 28px; font-size: 15px; }
+            #transcript { margin-top: 25px; font-size: 14px; width: 600px; min-height: 45px; }
         }
     </style>
 </head>
 <body>
 
-    <h1>J.A.R.V.I.S.</h1>
-    <div id="status">System Offline</div>
+    <div class="container">
+        <h1>J.A.R.V.I.S.</h1>
+        <div id="status">System Offline</div>
 
-    <div class="jarvis-core" id="core">
-        <div class="ring"></div>
-        <div class="core-inner" id="innerCore"></div>
+        <div class="jarvis-core" id="core">
+            <div class="ring"></div>
+            <div class="core-inner" id="innerCore"></div>
+        </div>
+
+        <button id="toggleBtn" onclick="toggleJarvis()">INITIALIZE JARVIS</button>
+        <div id="transcript">Click Initialize to boot up Jarvis.</div>
     </div>
-
-    <button id="toggleBtn" onclick="toggleJarvis()">INITIALIZE JARVIS</button>
-    <div id="transcript">Click Initialize to boot up Jarvis.</div>
 
     <script>
         let recognition = null;
@@ -351,13 +385,8 @@ def get_index():
 @app.post("/chat")
 def chat(data: ChatRequest):
     try:
-        if data.history and len(data.history) > 0:
-            formatted_history = [{"role": "system", "content": "You are JARVIS, Felix Hofmeister's advanced AI assistant. You speak with sharp wit, complete loyalty, and concise language. Answer everything directly. You have total and complete memory of every single past interaction stored in our database. If Felix asks about past conversations or anything you have ever discussed, you remember it with absolute clarity and state it directly. Never claim that you cannot remember or that each conversation is a separate session."}]
-            for msg in data.history:
-                formatted_history.append({"role": msg.role, "content": msg.content})
-        else:
-            formatted_history = load_history_from_db()
-            formatted_history.append({"role": "user", "content": data.message})
+        formatted_history = load_history_from_db()
+        formatted_history.append({"role": "user", "content": data.message})
 
         save_message_to_db("user", data.message)
 
