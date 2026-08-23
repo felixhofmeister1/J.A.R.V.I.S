@@ -1,52 +1,38 @@
 import os
-import sqlite3
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 import openai
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
 load_dotenv()
 app = FastAPI()
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# --- DATABASE SETUP ---
-DB_FILE = "jarvis.db"
-
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            role TEXT NOT NULL,
-            content TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-init_db()
+# --- SUPABASE SETUP ---
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def save_message_to_db(role: str, content: str):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO messages (role, content) VALUES (?, ?)", (role, content))
-    conn.commit()
-    conn.close()
+    try:
+        supabase.table("messages").insert({"role": role, "content": content}).execute()
+    except Exception as e:
+        print(f"Error saving to Supabase: {e}")
 
 def load_history_from_db():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT role, content FROM messages")
-    rows = cursor.fetchall()
-    conn.close()
+    try:
+        response = supabase.table("messages").select("role, content").order("created_at", desc=False).execute()
+        rows = response.data
+    except Exception as e:
+        print(f"Error loading from Supabase: {e}")
+        rows = []
     
-    # Always ensure the system prompt is first
-    history = [{"role": "system", "content": "You are JARVIS, Felix Hofmeister's advanced AI assistant. You speak with sharp wit, complete loyalty, and concise language. Answer everything directly."}]
+    history = [{"role": "system", "content": "You are JARVIS, Felix Hofmeister's advanced AI assistant. You speak with sharp wit, complete loyalty, and concise language. Answer everything directly. You have total and complete memory of every single past interaction stored in our database. If Felix asks about past conversations or anything you have ever discussed, you remember it with absolute clarity and state it directly. Never claim that you cannot remember or that each conversation is a separate session."}]
     for row in rows:
-        history.append({"role": row[0], "content": row[1]})
+        history.append({"role": row["role"], "content": row["content"]})
     return history
 
 class Message(BaseModel):
@@ -59,8 +45,8 @@ class ChatRequest(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 def get_index():
-    if not os.getenv("OPENAI_API_KEY"):
-        return "<h1>Error: OPENAI_API_KEY is missing in your .env file.</h1>"
+    if not os.getenv("OPENAI_API_KEY") or not SUPABASE_URL:
+        return "<h1>Error: OPENAI_API_KEY or Supabase credentials missing in your environment variables.</h1>"
     
     return """<!DOCTYPE html>
 <html lang="en">
@@ -192,6 +178,7 @@ def get_index():
         let recognition = null;
         let isRunning = false;
         let britishMaleVoice = null;
+        let clientConversationHistory = [];
 
         function loadVoices() {
             if (!('speechSynthesis' in window)) return;
@@ -229,6 +216,10 @@ def get_index():
                 return;
             }
 
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+
             recognition = new SpeechRecognition();
             recognition.continuous = false;
             recognition.interimResults = true;
@@ -253,17 +244,25 @@ def get_index():
 
                 const currentSpeech = finalTranscript || interimTranscript;
                 if (currentSpeech) {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                    }
                     document.getElementById('transcript').innerText = "You: " + currentSpeech;
                 }
 
                 if (finalTranscript) {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                    }
                     document.getElementById('status').innerText = "Processing...";
+
+                    clientConversationHistory.push({ role: "user", content: finalTranscript });
 
                     try {
                         const response = await fetch('/chat', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ message: finalTranscript })
+                            body: JSON.stringify({ message: finalTranscript, history: clientConversationHistory })
                         });
                         
                         if (!response.ok) throw new Error("Server error");
@@ -284,6 +283,7 @@ def get_index():
                             document.getElementById('transcript').innerText = "Jarvis: " + fullReply;
                         }
 
+                        clientConversationHistory.push({ role: "assistant", content: fullReply });
                         speak(fullReply);
 
                     } catch (err) {
@@ -351,11 +351,15 @@ def get_index():
 @app.post("/chat")
 def chat(data: ChatRequest):
     try:
-        # Save user message to SQLite database
-        save_message_to_db("user", data.message)
+        if data.history and len(data.history) > 0:
+            formatted_history = [{"role": "system", "content": "You are JARVIS, Felix Hofmeister's advanced AI assistant. You speak with sharp wit, complete loyalty, and concise language. Answer everything directly. You have total and complete memory of every single past interaction stored in our database. If Felix asks about past conversations or anything you have ever discussed, you remember it with absolute clarity and state it directly. Never claim that you cannot remember or that each conversation is a separate session."}]
+            for msg in data.history:
+                formatted_history.append({"role": msg.role, "content": msg.content})
+        else:
+            formatted_history = load_history_from_db()
+            formatted_history.append({"role": "user", "content": data.message})
 
-        # Pull complete chat history dynamically from SQLite database
-        formatted_history = load_history_from_db()
+        save_message_to_db("user", data.message)
 
         def generate():
             response = client.chat.completions.create(
@@ -370,7 +374,6 @@ def chat(data: ChatRequest):
                     full_response_text += delta
                     yield delta
             
-            # Save assistant response to SQLite database once generation finishes
             save_message_to_db("assistant", full_response_text)
 
         return StreamingResponse(generate(), media_type="text/plain")
