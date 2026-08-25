@@ -54,23 +54,30 @@ def get_index():
             margin: 0;
             padding: 0;
             width: 100%;
-            min-height: 100%;
+            height: 100%;
             background-color: #020b1c;
             background: linear-gradient(135deg, #020b1c, #001f3f, #004080);
-            background-attachment: fixed;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
             font-family: 'Courier New', Courier, monospace;
             color: #00ffff;
-            overflow-y: auto;
+            overflow: hidden;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         
         .container {
             width: 100%;
-            min-height: 100vh;
+            height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             box-sizing: border-box;
-            padding: 40px 20px;
+            padding: 20px;
         }
 
         h1 {
@@ -78,6 +85,7 @@ def get_index():
             text-shadow: 0 0 15px rgba(0,255,255,0.8);
             margin: 0 0 6px 0;
             text-align: center;
+            flex-shrink: 0;
         }
 
         #status {
@@ -85,7 +93,8 @@ def get_index():
             text-transform: uppercase;
             letter-spacing: 2px;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
+            flex-shrink: 0;
         }
 
         .jarvis-core {
@@ -155,12 +164,25 @@ def get_index():
             text-align: center;
             color: #cceeff;
             word-break: break-word;
-            margin-top: 25px;
+            margin-top: 20px;
             width: 100%;
             max-width: 600px;
+            height: 120px;
+            max-height: 120px;
+            overflow-y: auto;
             padding: 0 10px;
             box-sizing: border-box;
-            white-space: pre-wrap;
+            flex-shrink: 0;
+            scrollbar-width: thin;
+            scrollbar-color: #00ffff rgba(0,31,63,0.5);
+        }
+
+        #transcript::-webkit-scrollbar {
+            width: 6px;
+        }
+        #transcript::-webkit-scrollbar-thumb {
+            background-color: #00ffff;
+            border-radius: 3px;
         }
 
         @media screen and (max-width: 480px) {
@@ -168,7 +190,7 @@ def get_index():
             #status { font-size: 11px; margin-bottom: 15px; }
             .jarvis-core { width: 130px; height: 130px; min-width: 130px; min-height: 130px; }
             button { margin-top: 20px; padding: 10px 20px; font-size: 13px; }
-            #transcript { margin-top: 20px; font-size: 12px; }
+            #transcript { margin-top: 15px; font-size: 12px; height: 90px; max-height: 90px; }
         }
     </style>
 </head>
@@ -262,6 +284,7 @@ def get_index():
                         window.speechSynthesis.cancel();
                     }
                     transcriptDiv.innerText = "You: " + currentSpeech;
+                    transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
                 }
 
                 if (finalTranscript) {
@@ -293,7 +316,7 @@ def get_index():
                             const chunk = decoder.decode(value, { stream: true });
                             fullReply += chunk;
                             transcriptDiv.innerText = "Jarvis: " + fullReply;
-                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
                         }
 
                         speak(fullReply);
