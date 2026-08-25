@@ -92,9 +92,14 @@ def get_index():
             text-transform: uppercase;
             letter-spacing: 2px;
             text-align: center;
+            margin-bottom: 20px;
         }
 
         .jarvis-core {
+            width: 160px;
+            height: 160px;
+            min-width: 160px;
+            min-height: 160px;
             border-radius: 50%;
             border: 3px solid rgba(0, 255, 255, 0.4);
             display: flex;
@@ -102,6 +107,7 @@ def get_index():
             justify-content: center;
             box-shadow: 0 0 35px rgba(0, 191, 255, 0.5);
             position: relative;
+            flex-shrink: 0;
         }
 
         .ring {
@@ -141,6 +147,10 @@ def get_index():
             letter-spacing: 2px;
             box-shadow: 0 0 12px rgba(0,255,255,0.4);
             transition: 0.2s;
+            margin-top: 25px;
+            padding: 12px 28px;
+            font-size: 15px;
+            flex-shrink: 0;
         }
         button:hover {
             background: #00ffff;
@@ -152,30 +162,31 @@ def get_index():
             text-align: center;
             color: #cceeff;
             word-break: break-word;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 0 10px;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: #00ffff rgba(0,31,63,0.5);
+        }
+
+        #transcript::-webkit-scrollbar {
+            width: 6px;
+        }
+        #transcript::-webkit-scrollbar-thumb {
+            background-color: #00ffff;
+            border-radius: 3px;
         }
 
         @media screen and (max-width: 480px) {
             h1 { font-size: 26px; }
-            #status { font-size: 11px; margin-bottom: 2vh; }
-            .jarvis-core { width: 38vw; height: 38vw; min-width: 120px; min-height: 120px; }
-            button { margin-top: 3vh; padding: 10px 20px; font-size: 13px; }
-            #transcript { margin-top: 2vh; font-size: 12px; width: 95%; min-height: 35px; }
-        }
-
-        @media screen and (min-width: 481px) and (max-width: 1024px) {
-            h1 { font-size: 36px; }
-            #status { font-size: 14px; margin-bottom: 3vh; }
-            .jarvis-core { width: 28vmin; height: 28vmin; min-width: 180px; min-height: 180px; }
-            button { margin-top: 3.5vh; padding: 14px 32px; font-size: 16px; }
-            #transcript { margin-top: 2.5vh; font-size: 15px; width: 85%; min-height: 45px; }
-        }
-
-        @media screen and (min-width: 1025px) {
-            h1 { font-size: 44px; }
-            #status { font-size: 15px; margin-bottom: 35px; }
-            .jarvis-core { width: 180px; height: 180px; }
-            button { margin-top: 35px; padding: 12px 28px; font-size: 15px; }
-            #transcript { margin-top: 25px; font-size: 14px; width: 600px; min-height: 45px; }
+            #status { font-size: 11px; margin-bottom: 15px; }
+            .jarvis-core { width: 130px; height: 130px; min-width: 130px; min-height: 130px; }
+            button { margin-top: 20px; padding: 10px 20px; font-size: 13px; }
+            #transcript { margin-top: 15px; font-size: 12px; max-height: 90px; }
         }
     </style>
 </head>
@@ -262,11 +273,14 @@ def get_index():
                 }
 
                 const currentSpeech = finalTranscript || interimTranscript;
+                const transcriptDiv = document.getElementById('transcript');
+
                 if (currentSpeech) {
                     if ('speechSynthesis' in window) {
                         window.speechSynthesis.cancel();
                     }
-                    document.getElementById('transcript').innerText = "You: " + currentSpeech;
+                    transcriptDiv.innerText = "You: " + currentSpeech;
+                    transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
                 }
 
                 if (finalTranscript) {
@@ -288,7 +302,7 @@ def get_index():
                         const decoder = new TextDecoder();
                         let fullReply = "";
                         
-                        document.getElementById('transcript').innerText = "Jarvis: ";
+                        transcriptDiv.innerText = "Jarvis: ";
                         document.getElementById('status').innerText = "Jarvis Speaking...";
 
                         while (true) {
@@ -297,7 +311,8 @@ def get_index():
                             
                             const chunk = decoder.decode(value, { stream: true });
                             fullReply += chunk;
-                            document.getElementById('transcript').innerText = "Jarvis: " + fullReply;
+                            transcriptDiv.innerText = "Jarvis: " + fullReply;
+                            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
                         }
 
                         speak(fullReply);
@@ -367,10 +382,7 @@ def get_index():
 @app.post("/chat")
 def chat(data: ChatRequest):
     try:
-        # Save the user message to Supabase database first
         save_message_to_db("user", data.message)
-
-        # Load the complete conversation history straight from the database
         formatted_history = load_history_from_db()
 
         def generate():
@@ -386,7 +398,6 @@ def chat(data: ChatRequest):
                     full_response_text += delta
                     yield delta
             
-            # Save JARVIS's full response to the database after streaming finishes
             save_message_to_db("assistant", full_response_text)
 
         return StreamingResponse(generate(), media_type="text/plain")
