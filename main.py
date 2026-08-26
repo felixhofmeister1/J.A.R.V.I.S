@@ -85,7 +85,6 @@ def get_index():
             text-shadow: 0 0 15px rgba(0,255,255,0.8);
             margin: 0 0 6px 0;
             text-align: center;
-            flex-shrink: 0;
         }
 
         #status {
@@ -94,7 +93,6 @@ def get_index():
             letter-spacing: 2px;
             text-align: center;
             margin-bottom: 20px;
-            flex-shrink: 0;
         }
 
         .jarvis-core {
@@ -167,12 +165,10 @@ def get_index():
             margin-top: 20px;
             width: 100%;
             max-width: 600px;
-            height: 120px;
             max-height: 120px;
             overflow-y: auto;
             padding: 0 10px;
             box-sizing: border-box;
-            flex-shrink: 0;
             scrollbar-width: thin;
             scrollbar-color: #00ffff rgba(0,31,63,0.5);
         }
@@ -190,7 +186,7 @@ def get_index():
             #status { font-size: 11px; margin-bottom: 15px; }
             .jarvis-core { width: 130px; height: 130px; min-width: 130px; min-height: 130px; }
             button { margin-top: 20px; padding: 10px 20px; font-size: 13px; }
-            #transcript { margin-top: 15px; font-size: 12px; height: 90px; max-height: 90px; }
+            #transcript { margin-top: 15px; font-size: 12px; max-height: 90px; }
         }
     </style>
 </head>
@@ -234,8 +230,7 @@ def get_index():
             if (!isRunning) {
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel();
-                    // iOS audio unlock priming
-                    const unlockUtterance = new SpeechSynthesisUtterance("System online.");
+                    const unlockUtterance = new SpeechSynthesisUtterance("");
                     window.speechSynthesis.speak(unlockUtterance);
                 }
                 startJarvis();
@@ -249,6 +244,10 @@ def get_index():
             if (!SpeechRecognition) {
                 alert("Speech recognition is not supported in this browser. Try Chrome.");
                 return;
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
             }
 
             recognition = new SpeechRecognition();
@@ -277,11 +276,17 @@ def get_index():
                 const transcriptDiv = document.getElementById('transcript');
 
                 if (currentSpeech) {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                    }
                     transcriptDiv.innerText = "You: " + currentSpeech;
                     transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
                 }
 
                 if (finalTranscript) {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                    }
                     document.getElementById('status').innerText = "Processing...";
 
                     try {
@@ -342,25 +347,22 @@ def get_index():
             window.speechSynthesis.cancel();
             loadVoices();
 
-            // iOS fix: delay utterance slightly to prevent silent audio queue drops
-            setTimeout(() => {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 1.0;
-                utterance.pitch = 0.85;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 0.85;
 
-                if (britishMaleVoice) {
-                    utterance.voice = britishMaleVoice;
-                }
+            if (britishMaleVoice) {
+                utterance.voice = britishMaleVoice;
+            }
 
-                utterance.onstart = () => {
-                    document.getElementById('status').innerText = "Jarvis Speaking...";
-                };
-                utterance.onend = () => {
-                    document.getElementById('status').innerText = "Listening...";
-                };
+            utterance.onstart = () => {
+                document.getElementById('status').innerText = "Jarvis Speaking...";
+            };
+            utterance.onend = () => {
+                document.getElementById('status').innerText = "Listening...";
+            };
 
-                window.speechSynthesis.speak(utterance);
-            }, 100);
+            window.speechSynthesis.speak(utterance);
         }
 
         function stopJarvis() {
