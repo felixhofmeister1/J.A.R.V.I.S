@@ -24,8 +24,10 @@ def save_message_to_db(role: str, content: str):
 
 def load_history_from_db():
     try:
-        response = supabase.table("messages").select("role, content").order("created_at", desc=False).execute()
+        response = supabase.table("messages").select("role, content").order("created_at", desc=True).limit(10).execute()
         rows = response.data
+        if rows:
+            rows.reverse()
     except Exception as e:
         print(f"Error loading from Supabase: {e}")
         rows = []
