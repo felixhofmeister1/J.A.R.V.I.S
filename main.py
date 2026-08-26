@@ -234,7 +234,8 @@ def get_index():
             if (!isRunning) {
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel();
-                    const unlockUtterance = new SpeechSynthesisUtterance("");
+                    // iOS audio unlock priming
+                    const unlockUtterance = new SpeechSynthesisUtterance("System online.");
                     window.speechSynthesis.speak(unlockUtterance);
                 }
                 startJarvis();
@@ -248,10 +249,6 @@ def get_index():
             if (!SpeechRecognition) {
                 alert("Speech recognition is not supported in this browser. Try Chrome.");
                 return;
-            }
-
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
             }
 
             recognition = new SpeechRecognition();
@@ -280,17 +277,11 @@ def get_index():
                 const transcriptDiv = document.getElementById('transcript');
 
                 if (currentSpeech) {
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                    }
                     transcriptDiv.innerText = "You: " + currentSpeech;
                     transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
                 }
 
                 if (finalTranscript) {
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                    }
                     document.getElementById('status').innerText = "Processing...";
 
                     try {
@@ -351,22 +342,25 @@ def get_index():
             window.speechSynthesis.cancel();
             loadVoices();
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.0;
-            utterance.pitch = 0.85;
+            // iOS fix: delay utterance slightly to prevent silent audio queue drops
+            setTimeout(() => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 0.85;
 
-            if (britishMaleVoice) {
-                utterance.voice = britishMaleVoice;
-            }
+                if (britishMaleVoice) {
+                    utterance.voice = britishMaleVoice;
+                }
 
-            utterance.onstart = () => {
-                document.getElementById('status').innerText = "Jarvis Speaking...";
-            };
-            utterance.onend = () => {
-                document.getElementById('status').innerText = "Listening...";
-            };
+                utterance.onstart = () => {
+                    document.getElementById('status').innerText = "Jarvis Speaking...";
+                };
+                utterance.onend = () => {
+                    document.getElementById('status').innerText = "Listening...";
+                };
 
-            window.speechSynthesis.speak(utterance);
+                window.speechSynthesis.speak(utterance);
+            }, 100);
         }
 
         function stopJarvis() {
