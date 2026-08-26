@@ -389,7 +389,7 @@ def chat(data: ChatRequest):
 
         def generate():
             response = client.chat.completions.create(
-                model="gpt-5.6-sol",
+                model="gpt-5.4",
                 messages=formatted_history,
                 stream=True
             )
