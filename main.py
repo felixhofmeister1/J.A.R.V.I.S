@@ -387,7 +387,7 @@ def chat(data: ChatRequest):
 
         def generate():
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=formatted_history,
                 stream=True
             )
